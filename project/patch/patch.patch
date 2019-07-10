@@ -1,0 +1,343 @@
+Index: fidl/TsLib.fdepl
+===================================================================
+--- fidl/TsLib.fdepl	(revision 9973)
++++ fidl/TsLib.fdepl	(working copy)
+@@ -45,6 +45,10 @@
+ 	method ScanFiles {
+ 		SomeIpMethodID = 94
+ 	}
++	broadcast Status {
++		SomeIpEventID = 33000
++		SomeIpEventGroups = { 33000  }
++	}
+ 
+ }
+ 
+Index: fidl/TsLib.fidl
+===================================================================
+--- fidl/TsLib.fidl	(revision 9973)
++++ fidl/TsLib.fidl	(working copy)
+@@ -124,6 +124,13 @@
+ 			}
+ 	}
+ 
++	broadcast Status 
++	{
++		out {
++			String message 
++		}
++	}
++
+ }
+ 
+ interface IVideoWindow 
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandProxy.hpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandProxy.hpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandProxy.hpp	(working copy)
+@@ -63,6 +63,12 @@
+         return delegate_->getPlaybackStatusAttribute();
+     }
+ 
++    /**
++     * Returns the wrapper class that provides access to the broadcast Status.
++     */
++    virtual StatusEvent& getStatusEvent() {
++        return delegate_->getStatusEvent();
++    }
+ 
+     /**
+      * Calls GetFileInfos with synchronous semantics.
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandProxyBase.hpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandProxyBase.hpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandProxyBase.hpp	(working copy)
+@@ -30,6 +30,7 @@
+ #include <vector>
+ 
+ #include <CommonAPI/Attribute.hpp>
++#include <CommonAPI/Event.hpp>
+ #include <CommonAPI/Proxy.hpp>
+ #include <functional>
+ #include <future>
+@@ -47,6 +48,9 @@
+     typedef CommonAPI::ObservableAttribute< ::com::microchip::tslib::__Anonymous__::FileInfo> CurrentFileAttribute;
+     typedef CommonAPI::ObservableAttribute< ::com::microchip::tslib::__Anonymous__::PlaybackRepetionMode> PlaybackModeAttribute;
+     typedef CommonAPI::ObservableAttribute< ::com::microchip::tslib::__Anonymous__::PlaybackStatus> PlaybackStatusAttribute;
++    typedef CommonAPI::Event<
++        std::string
++    > StatusEvent;
+ 
+     typedef std::function<void(const CommonAPI::CallStatus&, const std::vector< ::com::microchip::tslib::__Anonymous__::FileInfo >&)> GetFileInfosAsyncCallback;
+     typedef std::function<void(const CommonAPI::CallStatus&, const bool&)> NextAsyncCallback;
+@@ -58,6 +62,7 @@
+     virtual PlaybackModeAttribute& getPlaybackModeAttribute() = 0;
+     virtual PlaybackStatusAttribute& getPlaybackStatusAttribute() = 0;
+ 
++    virtual StatusEvent& getStatusEvent() = 0;
+ 
+     virtual void GetFileInfos(CommonAPI::CallStatus &_internalCallStatus, std::vector< ::com::microchip::tslib::__Anonymous__::FileInfo > &_result, const CommonAPI::CallInfo *_info = nullptr) = 0;
+     virtual std::future<CommonAPI::CallStatus> GetFileInfosAsync(GetFileInfosAsyncCallback _callback = nullptr, const CommonAPI::CallInfo *_info = nullptr) = 0;
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPProxy.cpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPProxy.cpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPProxy.cpp	(working copy)
+@@ -49,6 +49,7 @@
+ ,          currentFile_(*this, CommonAPI::SomeIP::eventgroup_id_t(0x1b58), CommonAPI::SomeIP::event_id_t(0x20), CommonAPI::SomeIP::method_id_t(0x1e), false, false, CommonAPI::SomeIP::method_id_t(0x1f), false, static_cast< ::com::microchip::tslib::__Anonymous___::FileInfoDeployment_t* >(nullptr)),
+           playbackMode_(*this, CommonAPI::SomeIP::eventgroup_id_t(0x1b59), CommonAPI::SomeIP::event_id_t(0x2a), CommonAPI::SomeIP::method_id_t(0x28), false, false, CommonAPI::SomeIP::method_id_t(0x29), false, static_cast< ::com::microchip::tslib::__Anonymous___::PlaybackRepetionModeDeployment_t* >(nullptr)),
+           playbackStatus_(*this, CommonAPI::SomeIP::eventgroup_id_t(0x1b5a), CommonAPI::SomeIP::event_id_t(0x34), CommonAPI::SomeIP::method_id_t(0x32), false, false, CommonAPI::SomeIP::method_id_t(0x33), false, static_cast< ::com::microchip::tslib::__Anonymous___::PlaybackStatusDeployment_t* >(nullptr))
++,          status_(*this, 0x80e8, CommonAPI::SomeIP::event_id_t(0x80e8), false, false, std::make_tuple(static_cast< CommonAPI::SomeIP::StringDeployment* >(nullptr)))
+     {
+     }
+ 
+@@ -62,6 +63,9 @@
+         return playbackStatus_;
+     }
+ 
++    IVideoOnDemandSomeIPProxy::StatusEvent& IVideoOnDemandSomeIPProxy::getStatusEvent() {
++        return status_;
++    }
+ 
+         void IVideoOnDemandSomeIPProxy::GetFileInfos(CommonAPI::CallStatus &_internalCallStatus, std::vector< ::com::microchip::tslib::__Anonymous__::FileInfo > &_result, const CommonAPI::CallInfo *_info) {
+             CommonAPI::Deployable< std::vector< ::com::microchip::tslib::__Anonymous__::FileInfo >, CommonAPI::SomeIP::ArrayDeployment< ::com::microchip::tslib::__Anonymous___::FileInfoDeployment_t >> deploy_result(static_cast< CommonAPI::SomeIP::ArrayDeployment< ::com::microchip::tslib::__Anonymous___::FileInfoDeployment_t >* >(nullptr));
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPProxy.hpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPProxy.hpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPProxy.hpp	(working copy)
+@@ -22,6 +22,7 @@
+ #include <CommonAPI/SomeIP/Proxy.hpp>
+ #include <CommonAPI/SomeIP/Types.hpp>
+ #include <CommonAPI/SomeIP/Attribute.hpp>
++#include <CommonAPI/SomeIP/Event.hpp>
+ 
+ #undef COMMONAPI_INTERNAL_COMPILATION
+ 
+@@ -58,6 +59,7 @@
+     virtual PlaybackModeAttribute& getPlaybackModeAttribute();
+     virtual PlaybackStatusAttribute& getPlaybackStatusAttribute();
+ 
++    virtual StatusEvent& getStatusEvent();
+ 
+     virtual void GetFileInfos(CommonAPI::CallStatus &_internalCallStatus, std::vector< ::com::microchip::tslib::__Anonymous__::FileInfo > &_result, const CommonAPI::CallInfo *_info);
+     virtual std::future<CommonAPI::CallStatus> GetFileInfosAsync(GetFileInfosAsyncCallback _callback, const CommonAPI::CallInfo *_info);
+@@ -149,6 +151,7 @@
+     SomeIPplaybackStatus_Attribute playbackStatus_;
+ 
+ 
++     CommonAPI::SomeIP::Event<StatusEvent, CommonAPI::Deployable< std::string, CommonAPI::SomeIP::StringDeployment >> status_;
+ 
+ };
+ 
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPStubAdapter.hpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPStubAdapter.hpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandSomeIPStubAdapter.hpp	(working copy)
+@@ -51,6 +51,8 @@
+ 
+     void firePlaybackStatusAttributeChanged(const ::com::microchip::tslib::__Anonymous__::PlaybackStatus& value);
+ 
++    void fireStatusEvent(const std::string& message);
++
+     void deactivateManagedInstances() {
+     }
+     virtual void init(std::shared_ptr<CommonAPI::SomeIP::StubAdapter> instance) {
+@@ -180,11 +182,17 @@
+                 IVideoOnDemandSomeIPStubAdapterHelper::addStubDispatcher( { CommonAPI::SomeIP::method_id_t(0x5c) }, &playFileStubDispatcher );
+                 IVideoOnDemandSomeIPStubAdapterHelper::addStubDispatcher( { CommonAPI::SomeIP::method_id_t(0x5d) }, &prevStubDispatcher );
+                 IVideoOnDemandSomeIPStubAdapterHelper::addStubDispatcher( { CommonAPI::SomeIP::method_id_t(0x5e) }, &scanFilesStubDispatcher );
++
+         std::shared_ptr<CommonAPI::SomeIP::ClientId> clientId = std::make_shared<CommonAPI::SomeIP::ClientId>(0xFFFF);
+ 
+         // Provided events/fields
+         {
+             std::set<CommonAPI::SomeIP::eventgroup_id_t> itsEventGroups;
++            itsEventGroups.insert(CommonAPI::SomeIP::eventgroup_id_t(0x80e8));
++            CommonAPI::SomeIP::StubAdapter::registerEvent(CommonAPI::SomeIP::event_id_t(0x80e8), itsEventGroups, false);
++        }
++        {
++            std::set<CommonAPI::SomeIP::eventgroup_id_t> itsEventGroups;
+             itsEventGroups.insert(CommonAPI::SomeIP::eventgroup_id_t(CommonAPI::SomeIP::eventgroup_id_t(0x1b58)));
+             CommonAPI::SomeIP::StubAdapter::registerEvent(CommonAPI::SomeIP::event_id_t(0x20), itsEventGroups, true);
+             fireCurrentFileAttributeChanged(std::dynamic_pointer_cast< ::v1::com::microchip::tslib::IVideoOnDemandStub>(_stub)->getCurrentFileAttribute(clientId));
+@@ -400,6 +408,19 @@
+     );
+ }
+ 
++template <typename _Stub, typename... _Stubs>
++void IVideoOnDemandSomeIPStubAdapterInternal<_Stub, _Stubs...>::fireStatusEvent(const std::string& _message) {
++    CommonAPI::Deployable< std::string, CommonAPI::SomeIP::StringDeployment> deployed_message(_message, static_cast< CommonAPI::SomeIP::StringDeployment* >(nullptr));
++    CommonAPI::SomeIP::StubEventHelper<CommonAPI::SomeIP::SerializableArguments<  CommonAPI::Deployable< std::string, CommonAPI::SomeIP::StringDeployment > 
++    >>
++        ::sendEvent(
++            *this,
++            CommonAPI::SomeIP::event_id_t(0x80e8),
++            false,
++             deployed_message 
++    );
++}
++
+ template <typename _Stub = ::v1::com::microchip::tslib::IVideoOnDemandStub, typename... _Stubs>
+ class IVideoOnDemandSomeIPStubAdapter
+     : public IVideoOnDemandSomeIPStubAdapterInternal<_Stub, _Stubs...>,
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandStub.hpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandStub.hpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandStub.hpp	(working copy)
+@@ -31,6 +31,7 @@
+ #include <CommonAPI/Struct.hpp>
+ #include <cstdint>
+ #include <string>
++#include <unordered_set>
+ #include <vector>
+ 
+ #include <mutex>
+@@ -62,6 +63,11 @@
+     ///Notifies all remote listeners about a change of value of the attribute PlaybackStatus.
+     virtual void firePlaybackStatusAttributeChanged(const ::com::microchip::tslib::__Anonymous__::PlaybackStatus& PlaybackStatus) = 0;
+ 
++    /**
++    * Sends a broadcast event for Status. Should not be called directly.
++    * Instead, the "fire<broadcastName>Event" methods of the stub should be used.
++    */
++    virtual void fireStatusEvent(const std::string &_message) = 0;
+ 
+ 
+     virtual void deactivateManagedInstances() = 0;
+@@ -202,6 +208,12 @@
+     virtual void Prev(const std::shared_ptr<CommonAPI::ClientId> _client, PrevReply_t _reply) = 0;
+     /// This is the method that will be called on remote calls on the method ScanFiles.
+     virtual void ScanFiles(const std::shared_ptr<CommonAPI::ClientId> _client, ScanFilesReply_t _reply) = 0;
++    /// Sends a broadcast event for Status.
++    virtual void fireStatusEvent(const std::string &_message) {
++        auto stubAdapter = CommonAPI::Stub<IVideoOnDemandStubAdapter, IVideoOnDemandStubRemoteEvent>::stubAdapter_.lock();
++        if (stubAdapter)
++            stubAdapter->fireStatusEvent(_message);
++    }
+ 
+     
+     using CommonAPI::Stub<IVideoOnDemandStubAdapter, IVideoOnDemandStubRemoteEvent>::initStubAdapter;
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandStubDefault.cpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandStubDefault.cpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandStubDefault.cpp	(working copy)
+@@ -292,6 +292,9 @@
+ }
+ 
+ 
++void IVideoOnDemandStubDefault::fireStatusEvent(const std::string &_message) {
++    IVideoOnDemandStub::fireStatusEvent(_message);
++}
+ 
+ 
+ IVideoOnDemandStubDefault::RemoteEventHandler::RemoteEventHandler(IVideoOnDemandStubDefault *_defaultStub)
+Index: src-gen/v1/com/microchip/tslib/IVideoOnDemandStubDefault.hpp
+===================================================================
+--- src-gen/v1/com/microchip/tslib/IVideoOnDemandStubDefault.hpp	(revision 9973)
++++ src-gen/v1/com/microchip/tslib/IVideoOnDemandStubDefault.hpp	(working copy)
+@@ -73,6 +73,7 @@
+     COMMONAPI_EXPORT virtual void Prev(const std::shared_ptr<CommonAPI::ClientId> _client, PrevReply_t _reply);
+     COMMONAPI_EXPORT virtual void ScanFiles(const std::shared_ptr<CommonAPI::ClientId> _client, ScanFilesReply_t _reply);
+ 
++    COMMONAPI_EXPORT virtual void fireStatusEvent(const std::string &_message);
+ 
+     
+ protected:
+Index: src/IVideoOnDemandStubImpl.cpp
+===================================================================
+--- src/IVideoOnDemandStubImpl.cpp	(revision 9973)
++++ src/IVideoOnDemandStubImpl.cpp	(working copy)
+@@ -66,6 +66,7 @@
+ 			std::cout << "File present - changing track" << std::endl;
+ 			mCurrentFile = mFiles[iter];
+ 			found = true;
++			fireStatusEvent("track changed : " + mCurrentFile.getFileName());
+ 		}
+ 		iter++;
+ 	}
+@@ -88,6 +89,7 @@
+ 			std::cout << "File present - changing track" << std::endl;
+ 			mCurrentFile = mFiles[iter];
+ 			found = true;
++			fireStatusEvent("track changed : " + mCurrentFile.getFileName());
+ 		}
+ 		iter++;
+ 	}
+@@ -174,18 +176,21 @@
+ void IVideoOnDemandStubImpl::ScanFiles(const std::shared_ptr<CommonAPI::ClientId> _client, ScanFilesReply_t _reply) {
+ 	// Lets run a scan across the file system to find the media files
+ 	std::cout << "scanning files ..." << std::endl;
+-	mTotalFiles = 5;
+-	::com::microchip::tslib::__Anonymous__::FileInfo fileinfo1, fileinfo2, fileinfo3, fileinfo4, fileinfo5;
+-	fileinfo1.setFileName("life of pi");
+-	mFiles.push_back(fileinfo1);
+-	fileinfo2.setFileName("godfather");
+-	mFiles.push_back(fileinfo2);
+-	fileinfo3.setFileName("terminator");
+-	mFiles.push_back(fileinfo3);
+-	fileinfo4.setFileName("titanic");
+-	mFiles.push_back(fileinfo4);
+-	fileinfo5.setFileName("seven");
+-	mFiles.push_back(fileinfo5);
++	if (mTotalFiles == 0) {
++		mTotalFiles = 5;
++		::com::microchip::tslib::__Anonymous__::FileInfo fileinfo1, fileinfo2, fileinfo3, fileinfo4, fileinfo5;
++		fileinfo1.setFileName("life of pi");
++		mFiles.push_back(fileinfo1);
++		fileinfo2.setFileName("godfather");
++		mFiles.push_back(fileinfo2);
++		fileinfo3.setFileName("terminator");
++		mFiles.push_back(fileinfo3);
++		fileinfo4.setFileName("titanic");
++		mFiles.push_back(fileinfo4);
++		fileinfo5.setFileName("seven");
++		mFiles.push_back(fileinfo5);
++	}
++	fireStatusEvent("scanned files");
+ 	bool result = true;
+ 	_reply(result);
+ }
+@@ -220,6 +225,7 @@
+ 	}
+ 	mCurrentFile = mFiles[(++index)%mTotalFiles];
+ 	std::cout << "playing next movie " << mCurrentFile.getFileName() << std::endl;
++	fireStatusEvent("track changed : " + mCurrentFile.getFileName());
+ 	result = true;
+ 	_reply(result);
+ }
+@@ -263,6 +269,7 @@
+ 	}
+ 	mCurrentFile = mFiles[(--index)%mTotalFiles];
+ 	std::cout << "playing next movie " << mCurrentFile.getFileName() << std::endl;
++	fireStatusEvent("track changed : " + mCurrentFile.getFileName());
+ 	result = true;
+ 	_reply(result);
+ }
+Index: src/IVideoOnDemandStubImpl.hpp
+===================================================================
+--- src/IVideoOnDemandStubImpl.hpp	(revision 9973)
++++ src/IVideoOnDemandStubImpl.hpp	(working copy)
+@@ -35,7 +35,6 @@
+ 			virtual const ::com::microchip::tslib::__Anonymous__::PlaybackStatus& getPlaybackStatusAttribute(const std::shared_ptr<CommonAPI::ClientId> _client);
+ 			virtual void setPlaybackStatusAttribute(::com::microchip::tslib::__Anonymous__::PlaybackStatus _value);
+ 			virtual void setPlaybackStatusAttribute(const std::shared_ptr<CommonAPI::ClientId> _client, ::com::microchip::tslib::__Anonymous__::PlaybackStatus _value);
+-			
+ 			protected:
+ 				virtual bool trySetCurrentFileAttribute(::com::microchip::tslib::__Anonymous__::FileInfo _value);
+ 				
+Index: src/VodClient.cpp
+===================================================================
+--- src/VodClient.cpp	(revision 9973)
++++ src/VodClient.cpp	(working copy)
+@@ -47,6 +47,12 @@
+ 	termios_new.c_cc[VTIME] = 0;                            //
+ 	tcsetattr(0, TCSANOW, &termios_new);
+ 	
++	
++	// subscribe to broadcasts beforehand
++	mVodProxy->getStatusEvent().subscribe([&](const std::string &str) {
++		std::cout << str << std ::endl;
++	});
++	
+ 	bool bRun = true;
+ 	while (bRun) {
+ 		CommonAPI::CallStatus callStatus;

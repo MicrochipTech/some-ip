@@ -1,0 +1,39 @@
+import "platform:/plugin/org.genivi.commonapi.someip/deployment/CommonAPI-SOMEIP_deployment_spec.fdepl"
+import "Demo.fidl"
+
+
+define org.genivi.commonapi.someip.deployment for interface com.microchip.IDemo {
+
+	SomeIpServiceID = 16
+
+	attribute attribBool {
+        SomeIpGetterID = 30
+        SomeIpSetterID = 31
+        SomeIpNotifierID = 32
+        SomeIpEventGroups = { 7000   }
+        }
+
+	
+	method GetAttrib {
+		SomeIpMethodID = 90
+	}
+
+	method SetAttrib {
+		SomeIpMethodID = 91
+	}
+
+	broadcast Status {
+		SomeIpEventID = 33000
+		SomeIpEventGroups = { 33000  }
+	}
+
+}
+
+
+define org.genivi.commonapi.someip.deployment for provider Service {
+	instance com.microchip.IDemo {
+		 InstanceId = "com.microchip.demo"
+		SomeIpInstanceID = 22136
+	}
+}
+

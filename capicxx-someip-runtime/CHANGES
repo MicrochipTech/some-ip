@@ -1,0 +1,119 @@
+Changes
+=======
+
+v3.1.12.12
+- Fix deregistration of events upon service deregistration
+- Improve error handling on send errors
+
+v3.1.12.11
+- Set default build type to RelWithDebInfo when not specified
+  explicitly.
+
+v3.1.12.10
+- Ensure subsequent event delivery after uncatched exceptions in
+  registered event handlers by the user
+
+v3.1.12.9
+- support 'lock functors' in AttributeDispatcher(s)
+
+v3.1.12.8
+- Fixed data race in generated StubDefault when using attributes
+- use eventfd instead of pipe in Watch
+
+v3.1.12.7
+- Don't hold mutex when pushing to watch from cleanup thread to prevent deadlock
+
+v3.1.12.6
+- Fixed hang-up in proxy destruction when async method call was done
+  and proxy is not available.
+- Ensure that all async method calls done while the proxy is not
+  available are called with CAPI::CallStatus::NOT_AVAILABLE.
+
+v3.1.12.5
+- Fix possible heap corruption in conjunction with multiple mainloops
+- Optimize (de)serialization of byte arrays
+
+v3.1.12.4
+- Fixed calling of on$(BROADCASTNAME)SelectiveSubscriptionChanged
+  hooks within correct thread context if mainloop integration is used
+
+v3.1.12.3
+- Avoid holding mutex when pushing to mainloop queue
+
+v3.1.12.2
+- Always call subscribe with TCP_AND_UDP subscription type
+- Support for NUL (U+0000) code point within strings
+
+v3.1.12.1
+- Adapt to vSomeIP 2.8.0: Don't call subscription status handler on SubscribeEventGroupNACK for non selective subscriptions
+
+v3.1.12
+- set CommonAPI CallStatus if wrong CRC value was received
+- consider version in address translation for SOME/IP
+- added backwards compatibility for splitted / merged service inferfaces
+
+v3.1.11.4
+- Fixed potential busy loop for mainloop applications
+
+v3.1.11.3
+- Fixed reading empty unions
+
+v3.1.11.2
+- Fixed Encoding/Decoding of bit-optimized values
+- Fixed event's errorListener was not always called on subscription
+
+v3.1.11.1
+- Adapt to vSomeIP 2.6.0 (event based subscriptions)
+- Fixed races
+- Fixed exception on thread destruction
+
+v3.1.11
+- Bugfixes
+- Removed Config.hpp. The defines of this file are now located in Constants.hpp
+  as C++ constants.
+- Fixed concurrency issues when hosting multiple instances of the same service
+  in the same binary.
+- Ensure proxy is not destroyed while callback function is invoked
+
+v3.1.10.4
+- Fixed crash (double free) on destruction of static objects
+- Fixed availability issues in verification tests
+
+v3.1.10.3
+- Fixed subscription counter handling
+
+v3.1.10.2
+- Revised handling for timeouts of asynchronous calls
+
+v3.1.10.1
+- Check subscription counter also if eventhandler was erased.
+- Avoid segmentation fault when creating a connection failed.
+- Fix connection does not get destroyed on unregisterService().
+- Read value of nosubscribe attributes not working.
+- Fixed crash on dlclose().
+
+v3.1.10
+- Change Proxy::onServiceInstanceStatus to non-static to ensure that this method exists even if the proxy was deleted.
+- Avoid blocking Mainloop when trying to do a synchronous call in callback.
+- Fixed possible deadlock in unregister method.
+- Switch off payload check withing vsomeip as it is already done at CommonAPI core level.
+- Do not reconnect TCP if client is already inactive.
+- Corrected determination of read/write start position for bit deployed elements.
+- Make cleanupCancelled member in Connection.hpp atomic.
+- Fixed problem with pointer of 'DispatchSource' to its related 'Watch' as member variable and access of the watch in the destructor of the dispatch source (segfault possible if the watch is deleted before the dispatch source).
+- Ensure replies or timeouts are delivered when blocking call returns.
+- Enabled cleanup thread under windows to handle timeouts.
+- Unlock before handler call to avoid deadlock (in case a synchronous method call from seletive event's ErrorListener is made and another thread issues a synchronous call at the same time, a deadlock might occur in applications that are not using CommonAPI's mainloop integration).
+- Initial events were not received after unsubscribe and resubscribing, because subscription counter was not incremented for attributes.
+- Support message error replies (at the moment there is no possibility with SOME/IP to explicitely send an error reply message. So this feature is not working yet but the
+ basic framework to realize this feature on stub side was implemented).
+- Replace polling mechanism in Windows main-loop (the current polling mechanism was replaced with a WSAPoll on the file descriptors instead of WSAWaitForMultipleEvents on wsa events).
+
+v3.1.9.1
+- Fixed bad_weak_ptr bug if an 'InstanceAvailabilityStatusChangedEvent' occurs and the manager proxy was deleted.
+- Replaced raw pointer usage/bind by weak_ptr to avoid crashes when the proxy was deleted and we held a dangling pointer in case of subscribing to:
+  * attributes
+  * broadcasts/selective broadcasts
+  * proxy status events
+  * instance availability status changed events (managed)
+

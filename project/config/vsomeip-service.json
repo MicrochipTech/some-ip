@@ -1,0 +1,34 @@
+{
+	"unicast" : "10.40.32.64",
+		"logging" :
+		{
+			"level" : "trace",
+			"console" : "true",
+			"file" : { "enable" : "false" },
+			"dlt" : "false"
+		},
+		"applications" : 
+			[
+			{
+				"name" : "service-sample",
+				"id" : "0x1000"
+			}
+			],
+				"services" :
+					[
+					{
+						"service" : "0x10",
+						"instance" : "22136",
+						"reliable" : { "port" : "30509", "enable-magic-cookies" : "false" },
+						"unreliable": "31000"
+					}
+					],
+						"routing" : "service-sample",
+						"service-discovery" :
+						{
+							"enable" : "true",
+							"multicast" : "224.244.224.245",
+							"port" : "30490",
+							"protocol" : "udp"
+						}
+}

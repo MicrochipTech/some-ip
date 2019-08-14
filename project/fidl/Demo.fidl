@@ -1,0 +1,64 @@
+package com.microchip
+
+<** @description : Typecollection **>
+typeCollection CustomTypes{
+	version {major 1 minor 0}
+
+		<** @description :  **>
+		struct attribStruct
+		{
+			UInt8 attribX
+			UInt8 attribY
+			UInt16 attribZ
+		}
+}
+
+<** @description : Interface to be implemented by server **>
+interface IDemo 
+{
+	version {major 1 minor 0}
+
+	attribute Boolean attribBool
+	
+	<** @description : Error handling **>
+	enumeration GenericErrors 
+	{
+		Error
+		Success
+	}
+
+	
+	<** @description : Retrieve Attrib **>
+	method GetAttrib
+	{
+		out
+		{
+			Boolean data
+		}
+
+		error GenericErrors
+	}
+
+	<** @description : Set Attrib **>
+	method SetAttrib 
+	{
+		in
+		{
+			Boolean value
+		}
+
+		error GenericErrors
+	}
+	
+	<** @description : Broadcast for notifing client **>
+	broadcast Status 
+	{
+		out {
+			String Message 
+		}
+	}
+
+
+
+}
+
